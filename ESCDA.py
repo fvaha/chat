@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import serialization
 
 
 def random_alphanumeric_string(length):
@@ -30,7 +31,7 @@ def derive_key_from_password(password, salt):
         iterations=100000,
         backend=default_backend()
     )
-    return kdf.derive(password.encode())
+    return kdf.derive(password)
 
 
 def encrypt_message(message, aes_key):
@@ -55,7 +56,7 @@ def decrypt_message(encrypted_message, aes_key):
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("192.168.1.2", 9999))
+    server.bind(("0.0.0.0", 9999))
     server.listen()
     client, addr = server.accept()
     return client
@@ -87,6 +88,7 @@ def get_messages(sock, keys):
 def main():
     private_key_user1, public_key_user1 = generate_keys()
     private_key_user2, public_key_user2 = generate_keys()
+    private_key_user3, public_key_user3 = generate_keys()
 
     # Exchange public keys (ECDSA key exchange)
     public_key_user1_bytes = public_key_user1.public_bytes(
@@ -108,6 +110,8 @@ def main():
     # User1's shared keys
     shared_key_1_2 = private_key_user1.exchange(ec.ECDH(), public_key_user2)
     shared_key_1_3 = private_key_user1.exchange(ec.ECDH(), public_key_user3)
+    shared_key_3_1 = private_key_user3.exchange(ec.ECDH(), public_key_user1)
+    shared_key_3_2 = private_key_user3.exchange(ec.ECDH(), public_key_user2)
 
     # User2's shared keys
     shared_key_2_1 = private_key_user2.exchange(ec.ECDH(), public_key_user1)
